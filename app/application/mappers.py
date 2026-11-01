@@ -1,5 +1,5 @@
 from app.schemas.categoria import CategoriaResponse
-from app.schemas.herramienta import HerramientaResponse
+from app.schemas.herramienta_schema import HerramientaResponse
 from app.schemas.prestamo import PrestamoResponse
 from app.schemas.usuario import UsuarioResponse
 

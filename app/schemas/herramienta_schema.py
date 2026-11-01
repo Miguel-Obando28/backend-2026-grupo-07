@@ -1,31 +1,15 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
-# 1. Esquema para la creación (Datos que envía el cliente por POST)
 class HerramientaCreate(BaseModel):
-    nombre: str
-    descripcion: str | None = None
-    stock: int
-    categoria_id: int
+    nombre: str = Field(..., min_length=3, max_length=100)
+    categoria: str = Field(..., min_length=3, max_length=50)
+    stock: int = Field(..., gt=0, description="El stock inicial debe ser mayor a 0")
 
 
-# 2. Esquema para la actualización (Datos opcionales para PUT/PATCH)
-class HerramientaUpdate(BaseModel):
-    nombre: str | None = None
-    descripcion: str | None = None
-    stock: int | None = None
-    categoria_id: int | None = None
-
-
-# 3. Esquema para la respuesta (Lo que devuelve la API al cliente)
-class HerramientaResponse(BaseModel):
+class HerramientaResponse(HerramientaCreate):
     id: int
-    nombre: str
-    descripcion: str | None = None
-    stock: int
-    categoria_id: int
+    disponible: bool
 
     class Config:
-        from_attributes = (
-            True  # Permite leer datos directamente desde modelos ORM de SQLAlchemy
-        )
+        from_attributes = True

@@ -1,28 +1,19 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
-# Datos requeridos para registrar un usuario
 class UsuarioCreate(BaseModel):
-    nombre: str
-    rut: str
-    email: EmailStr
-    telefono: str | None = None
+    nombre: str = Field(
+        ..., min_length=2, max_length=50, description="Nombre del usuario"
+    )
+    apellido: str = Field(
+        ..., min_length=2, max_length=50, description="Apellido del usuario"
+    )
+    email: EmailStr = Field(..., description="Correo institucional o personal válido")
+    rut: str = Field(..., min_length=8, max_length=10, description="RUT del usuario")
 
 
-# Datos opcionales para actualizar un usuario
-class UsuarioUpdate(BaseModel):
-    nombre: str | None = None
-    email: EmailStr | None = None
-    telefono: str | None = None
-
-
-# Datos devueltos al cliente
-class UsuarioResponse(BaseModel):
+class UsuarioResponse(UsuarioCreate):
     id: int
-    nombre: str
-    rut: str
-    email: EmailStr
-    telefono: str | None = None
 
     class Config:
         from_attributes = True

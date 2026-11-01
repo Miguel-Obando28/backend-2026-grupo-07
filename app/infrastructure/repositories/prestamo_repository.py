@@ -1,4 +1,4 @@
-from app.models.models import HerramientaModel, PrestamoModel
+from app.infrastructure.models.models import HerramientaModel, PrestamoModel
 from sqlalchemy.orm import Session
 
 
