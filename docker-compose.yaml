@@ -9,10 +9,23 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: backend_db
     ports:
-      - "5432:5432"
+      - "5433:5432"  # <-- Cambiado de 5432:5432 a 5433:5432
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: always
+
+  api:
+    build: .
+    container_name: fastapi_grupo07
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/backend_db
+    volumes:
+      - .:/app
+    depends_on:
+      - db
 
 volumes:
   pgdata:

@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 from app.application.mappers import Mapper
 from app.infrastructure.repositories.prestamo_repository import PrestamoRepository
@@ -36,7 +36,7 @@ class PrestamoService:
             )
 
         # Regla de Negocio 3: Asignar fecha esperada automática (7 días) si no viene especificada
-        fecha_prestamo = datetime.now(UTC)
+        fecha_prestamo = datetime.now(datetime.UTC)
         fecha_devolucion = dto.fecha_devolucion_esperada or (
             fecha_prestamo + timedelta(days=7)
         )
