@@ -1,0 +1,56 @@
+### ============================================================
+### CASOS DE ERROR DE VALIDACIÓN (422 / 400)
+### Un solo "Send Request" por bloque. No hace falta ejecutar en orden.
+###
+### IMPORTANTE: el JSON debe ser válido y lo inválido debe ser el DATO.
+### Si la respuesta dice "JSON decode error", la prueba NO sirve de
+### evidencia: hay una variable sin reemplazar o una coma mal puesta.
+### ============================================================
+
+@baseUrl = http://localhost:8000
+@json = application/json
+@categoriaId = 1
+
+
+### V1. Campo obligatorio faltante: usuario sin email -> 422
+POST {{baseUrl}}/usuarios/
+Content-Type: {{json}}
+
+{ "nombre": "Sin Email", "rol": "estudiante" }
+
+
+### V2. Tipo incorrecto: categoria_id como texto -> 422
+POST {{baseUrl}}/herramientas/
+Content-Type: {{json}}
+
+{ "nombre": "Tipo malo", "codigo_serial": "V2-{{$timestamp}}", "categoria_id": "abc" }
+
+
+### V3. Campo obligatorio faltante: herramienta sin codigo_serial -> 422
+POST {{baseUrl}}/herramientas/
+Content-Type: {{json}}
+
+{ "nombre": "Sin serial", "categoria_id": {{categoriaId}} }
+
+
+### V4. Tipo incorrecto: usuario_id como texto en préstamo -> 422
+POST {{baseUrl}}/prestamos/
+Content-Type: {{json}}
+
+{ "usuario_id": "abc", "herramienta_id": 1 }
+
+
+### V5. Formato: email inválido -> esperado 422
+###     (HOY la API devuelve 201: falta validar el formato)
+POST {{baseUrl}}/usuarios/
+Content-Type: {{json}}
+
+{ "nombre": "Sin Arroba", "email": "malo-{{$timestamp}}", "rol": "estudiante" }
+
+
+### V6. Longitud: nombre vacío -> esperado 422
+###     (HOY la API devuelve 201: falta validar la longitud)
+POST {{baseUrl}}/usuarios/
+Content-Type: {{json}}
+
+{ "nombre": "", "email": "vacio{{$timestamp}}@uct.cl", "rol": "estudiante" }
