@@ -100,6 +100,11 @@ def devolver_prestamo(prestamo_id: int, db: Annotated[Session, Depends(get_db)])
         )
 
     prestamo.estado = "devuelto"
+    if prestamo.estado == "devuelto":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El préstamo ya ha sido devuelto",
+        )
     db.commit()
     db.refresh(prestamo)
     return prestamo
