@@ -1,10 +1,11 @@
 from typing import Annotated
 
-from app.infrastructure.models.models import HerramientaModel
+from app.infrastructure.models.models import HerramientaModel , PrestamoModel
 from app.presentation.dependencies import get_db
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 router = APIRouter(prefix="/herramientas", tags=["Herramientas"])
 
@@ -95,3 +96,67 @@ def obtener_herramienta(herramienta_id: int, db: Annotated[Session, Depends(get_
             status_code=status.HTTP_404_NOT_FOUND, detail="Herramienta no encontrada"
         )
     return herramienta
+
+
+@router.put(
+    "/{herramienta_id}",
+    response_model=HerramientaResponse,
+    status_code=status.HTTP_200_OK,
+)
+def actualizar_herramienta(
+    herramienta_id: int,
+    datos: HerramientaCreate,
+    db: Annotated[Session, Depends(get_db)],
+):
+    herramienta = (
+        db.query(HerramientaModel)
+        .filter(HerramientaModel.id == herramienta_id)
+        .first()
+    )
+    if herramienta is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Herramienta no encontrada.",
+        )
+    herramienta.nombre = datos.nombre
+    herramienta.codigo_serial = datos.codigo_serial
+    herramienta.categoria_id = datos.categoria_id
+    try:
+        db.commit()
+        db.refresh(herramienta)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El código serial ya existe o la categoría no es válida.",
+        )
+    return herramienta
+
+
+@router.delete("/{herramienta_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_herramienta(
+    herramienta_id: int,
+    db: Annotated[Session, Depends(get_db)],
+):
+    herramienta = (
+        db.query(HerramientaModel)
+        .filter(HerramientaModel.id == herramienta_id)
+        .first()
+    )
+    if herramienta is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Herramienta no encontrada.",
+        )
+    tiene_prestamos = (
+        db.query(PrestamoModel)
+        .filter(PrestamoModel.herramienta_id == herramienta_id)
+        .first()
+    )
+    if tiene_prestamos:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se puede eliminar: la herramienta tiene préstamos asociados.",
+        )
+    db.delete(herramienta)
+    db.commit()

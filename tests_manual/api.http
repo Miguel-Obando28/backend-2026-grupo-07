@@ -293,14 +293,3 @@ GET {{baseUrl}}/herramientas/?direccion=arriba
 ### ============================================================
 
 GET {{baseUrl}}/herramientas/
-
-
-### ============================================================
-### 7. PENDIENTES (el grupo aún no programa estas rutas)
-### Descomentar cuando existan: GET /usuarios/{id}, PUT y DELETE de
-### un recurso (CRUD completo exigido), y las rutas de /categorias/.
-### ============================================================
-
-# GET {{baseUrl}}/usuarios/{{usuarioId}}
-# PUT {{baseUrl}}/herramientas/{{herramientaId}}
-# DELETE {{baseUrl}}/herramientas/{{herramientaId}}

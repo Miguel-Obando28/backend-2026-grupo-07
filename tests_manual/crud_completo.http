@@ -1,0 +1,66 @@
+### ============================================================
+### CRUD COMPLETO - Entidad: HERRAMIENTA
+### Ejecutar de arriba hacia abajo, un "Send Request" por bloque.
+### Requiere en la API: POST, GET, GET/{id}, PUT/{id}, DELETE/{id}
+### Hoy faltan PUT y DELETE: esos bloques darán 405 hasta que se programen.
+### ============================================================
+
+@baseUrl = http://localhost:8000
+@json = application/json
+@categoriaId = 1
+
+
+### C1. CREATE: crear herramienta -> 201
+# @name crud_crear
+POST {{baseUrl}}/herramientas/
+Content-Type: {{json}}
+
+{
+  "nombre": "Llave inglesa",
+  "codigo_serial": "CRUD-{{$timestamp}}",
+  "categoria_id": {{categoriaId}}
+}
+
+###
+@crudId = {{crud_crear.response.body.id}}
+
+
+### C2. READ (listar): la herramienta aparece en la lista -> 200
+GET {{baseUrl}}/herramientas/
+
+
+### C3. READ (por ID): obtener la herramienta creada -> 200
+GET {{baseUrl}}/herramientas/{{crudId}}
+
+
+### C4. UPDATE: cambiar el nombre -> 200
+PUT {{baseUrl}}/herramientas/{{crudId}}
+Content-Type: {{json}}
+
+{
+  "nombre": "Llave inglesa 12 pulgadas",
+  "codigo_serial": "CRUD-{{$timestamp}}",
+  "categoria_id": {{categoriaId}}
+}
+
+
+### C5. READ: confirmar que el nombre cambió -> 200
+###     (el JSON debe decir "Llave inglesa 12 pulgadas")
+GET {{baseUrl}}/herramientas/{{crudId}}
+
+
+### C6. DELETE: eliminar la herramienta -> 204 (o 200 si devuelve contenido)
+DELETE {{baseUrl}}/herramientas/{{crudId}}
+
+
+### C7. READ: confirmar que ya no existe -> 404
+GET {{baseUrl}}/herramientas/{{crudId}}
+
+
+### ============================================================
+### PERSISTENCIA (opcional, pide el PDF):
+###  a) Ejecuta C1 y C3 (o solo C1 y C4, sin borrar).
+###  b) Terminal: docker compose down      (SIN -v)
+###  c) Terminal: docker compose up
+###  d) Ejecuta C3 otra vez: el dato debe seguir ahí.
+### ============================================================
