@@ -1,0 +1,306 @@
+### ============================================================
+### PRUEBAS MANUALES - API Backend Grupo 7 (Préstamo de herramientas)
+### Extensión necesaria: "REST Client" de VS Code
+### 1) docker compose up --build
+### 2) Send Request en cada bloque, DE ARRIBA HACIA ABAJO
+###
+### Rutas reales (según /docs):
+###   POST/GET /usuarios/  (nombre, email, rol)
+###   POST/GET /herramientas/   GET /herramientas/{id}
+###   POST/GET /prestamos/       PUT /prestamos/{id}/devolver
+### Los valores únicos usan {{$timestamp}} para poder repetir las pruebas.
+###
+### @categoriaId: la herramienta exige una categoría. Cambiar el 1 por el id
+### de una categoría que exista (la carga el seeder) o la que cree el grupo.
+### ============================================================
+
+@baseUrl = http://localhost:8000
+@json = application/json
+@categoriaId = 1
+
+
+### ============================================================
+### 1. CASOS DE ÉXITO
+### ============================================================
+
+### 1.1 Crear usuario -> 201
+# @name crearUsuario
+POST {{baseUrl}}/usuarios/
+Content-Type: {{json}}
+
+{
+  "nombre": "Gabriel Prueba",
+  "email": "gabriel{{$timestamp}}@uct.cl",
+  "rol": "estudiante"
+}
+
+###
+@usuarioId = {{crearUsuario.response.body.id}}
+@usuarioEmail = {{crearUsuario.response.body.email}}
+
+
+### 1.2 Crear segundo usuario -> 201
+# @name crearUsuario2
+POST {{baseUrl}}/usuarios/
+Content-Type: {{json}}
+
+{
+  "nombre": "Miguel Prueba",
+  "email": "miguel{{$timestamp}}@uct.cl",
+  "rol": "estudiante"
+}
+
+###
+@usuarioId2 = {{crearUsuario2.response.body.id}}
+
+
+### 1.3 Listar usuarios -> 200
+GET {{baseUrl}}/usuarios/
+
+
+### 1.4 Crear herramienta -> 201
+# @name crearHerramienta
+POST {{baseUrl}}/herramientas/
+Content-Type: {{json}}
+
+{
+  "nombre": "Taladro percutor",
+  "codigo_serial": "TAL-{{$timestamp}}",
+  "categoria_id": {{categoriaId}}
+}
+
+###
+@herramientaId = {{crearHerramienta.response.body.id}}
+
+
+### 1.5 Listar herramientas -> 200
+GET {{baseUrl}}/herramientas/
+
+
+### 1.6 Obtener herramienta por ID -> 200
+GET {{baseUrl}}/herramientas/{{herramientaId}}
+
+
+### 1.7 Registrar préstamo -> 201 (estado "activo")
+# @name crearPrestamo
+POST {{baseUrl}}/prestamos/
+Content-Type: {{json}}
+
+{
+  "usuario_id": {{usuarioId}},
+  "herramienta_id": {{herramientaId}}
+}
+
+###
+@prestamoId = {{crearPrestamo.response.body.id}}
+
+
+### 1.8 Listar préstamos -> 200
+GET {{baseUrl}}/prestamos/
+
+
+### 1.9 Devolver préstamo -> 200 (estado "devuelto")
+PUT {{baseUrl}}/prestamos/{{prestamoId}}/devolver
+Content-Type: {{json}}
+
+
+### ============================================================
+### 2. VALIDACIONES INVÁLIDAS -> 422
+### ============================================================
+
+### 2.1 Formato: email inválido -> 422
+POST {{baseUrl}}/usuarios/
+Content-Type: {{json}}
+
+{ "nombre": "Sin Arroba", "email": "esto-no-es-un-email", "rol": "estudiante" }
+
+
+### 2.2 Longitud: nombre vacío -> 422
+POST {{baseUrl}}/usuarios/
+Content-Type: {{json}}
+
+{ "nombre": "", "email": "vacio{{$timestamp}}@uct.cl", "rol": "estudiante" }
+
+
+### 2.3 Campo obligatorio faltante (codigo_serial) -> 422
+POST {{baseUrl}}/herramientas/
+Content-Type: {{json}}
+
+{ "nombre": "Sin serial", "categoria_id": {{categoriaId}} }
+
+
+### 2.4 Tipo incorrecto (categoria_id como texto) -> 422
+POST {{baseUrl}}/herramientas/
+Content-Type: {{json}}
+
+{ "nombre": "Tipo malo", "codigo_serial": "X-{{$timestamp}}", "categoria_id": "abc" }
+
+
+### ============================================================
+### 3. RECURSO INEXISTENTE / DUPLICADO
+### ============================================================
+
+### 3.1 Herramienta inexistente -> 404
+GET {{baseUrl}}/herramientas/999999
+
+### 3.2 Préstamo con usuario inexistente -> 404
+POST {{baseUrl}}/prestamos/
+Content-Type: {{json}}
+
+{ "usuario_id": 999999, "herramienta_id": {{herramientaId}} }
+
+### 3.3 Préstamo con herramienta inexistente -> 404
+POST {{baseUrl}}/prestamos/
+Content-Type: {{json}}
+
+{ "usuario_id": {{usuarioId}}, "herramienta_id": 999999 }
+
+### 3.4 Devolver préstamo inexistente -> 404
+PUT {{baseUrl}}/prestamos/999999/devolver
+Content-Type: {{json}}
+
+### 3.5 Duplicado: repetir un email existente -> 409
+POST {{baseUrl}}/usuarios/
+Content-Type: {{json}}
+
+{ "nombre": "Duplicado", "email": "{{usuarioEmail}}", "rol": "estudiante" }
+
+
+### ============================================================
+### 4. LAS 3 REGLAS DE NEGOCIO -> 400 Bad Request
+### (si alguna no da 400, esa regla aún no está programada)
+### ============================================================
+
+### ---- REGLA 1: una herramienta ya prestada no puede prestarse ----
+
+### R1.a Préstamo válido -> 201
+# @name prestamoR1
+POST {{baseUrl}}/prestamos/
+Content-Type: {{json}}
+
+{ "usuario_id": {{usuarioId}}, "herramienta_id": {{herramientaId}} }
+
+###
+@prestamoR1Id = {{prestamoR1.response.body.id}}
+
+### R1.b Otro usuario pide la MISMA herramienta -> 400
+POST {{baseUrl}}/prestamos/
+Content-Type: {{json}}
+
+{ "usuario_id": {{usuarioId2}}, "herramienta_id": {{herramientaId}} }
+
+
+### ---- REGLA 2: no se puede devolver un préstamo ya devuelto ----
+
+### R2.a Primera devolución -> 200
+PUT {{baseUrl}}/prestamos/{{prestamoR1Id}}/devolver
+Content-Type: {{json}}
+
+### R2.b Segunda devolución del MISMO préstamo -> 400
+PUT {{baseUrl}}/prestamos/{{prestamoR1Id}}/devolver
+Content-Type: {{json}}
+
+
+### ---- REGLA 3: máximo 3 préstamos activos por usuario ----
+
+### R3.a Crear 4 herramientas nuevas
+# @name hA
+POST {{baseUrl}}/herramientas/
+Content-Type: {{json}}
+
+{ "nombre": "Alicate", "codigo_serial": "ALI-{{$timestamp}}", "categoria_id": {{categoriaId}} }
+
+###
+@hAId = {{hA.response.body.id}}
+
+# @name hB
+POST {{baseUrl}}/herramientas/
+Content-Type: {{json}}
+
+{ "nombre": "Martillo", "codigo_serial": "MAR-{{$timestamp}}", "categoria_id": {{categoriaId}} }
+
+###
+@hBId = {{hB.response.body.id}}
+
+# @name hC
+POST {{baseUrl}}/herramientas/
+Content-Type: {{json}}
+
+{ "nombre": "Sierra", "codigo_serial": "SIE-{{$timestamp}}", "categoria_id": {{categoriaId}} }
+
+###
+@hCId = {{hC.response.body.id}}
+
+# @name hD
+POST {{baseUrl}}/herramientas/
+Content-Type: {{json}}
+
+{ "nombre": "Destornillador", "codigo_serial": "DES-{{$timestamp}}", "categoria_id": {{categoriaId}} }
+
+###
+@hDId = {{hD.response.body.id}}
+
+### R3.b Préstamos 1, 2 y 3 del usuario 2 -> 201 cada uno
+POST {{baseUrl}}/prestamos/
+Content-Type: {{json}}
+
+{ "usuario_id": {{usuarioId2}}, "herramienta_id": {{hAId}} }
+
+###
+POST {{baseUrl}}/prestamos/
+Content-Type: {{json}}
+
+{ "usuario_id": {{usuarioId2}}, "herramienta_id": {{hBId}} }
+
+###
+POST {{baseUrl}}/prestamos/
+Content-Type: {{json}}
+
+{ "usuario_id": {{usuarioId2}}, "herramienta_id": {{hCId}} }
+
+### R3.c Préstamo número 4 del mismo usuario -> 400
+POST {{baseUrl}}/prestamos/
+Content-Type: {{json}}
+
+{ "usuario_id": {{usuarioId2}}, "herramienta_id": {{hDId}} }
+
+
+### ============================================================
+### 5. FILTRO + ORDEN + PAGINACIÓN (un mismo GET) -> 200
+### Esperado: {"items":[...],"total":N,"pagina":1,"limite":2,"total_paginas":M}
+### PENDIENTE: hoy GET /herramientas/ puede no aceptar estos parámetros.
+### ============================================================
+
+### 5.1 Filtrar por categoría, ordenar por nombre, página 1
+GET {{baseUrl}}/herramientas/?categoria_id={{categoriaId}}&ordenar_por=nombre&direccion=asc&pagina=1&limite=2
+
+### 5.2 Página 2
+GET {{baseUrl}}/herramientas/?categoria_id={{categoriaId}}&ordenar_por=nombre&direccion=asc&pagina=2&limite=2
+
+### 5.3 Límite inválido (fuera de 1..100) -> 422
+GET {{baseUrl}}/herramientas/?pagina=1&limite=500
+
+### 5.4 Dirección inválida (solo asc/desc) -> 422
+GET {{baseUrl}}/herramientas/?direccion=arriba
+
+
+### ============================================================
+### 6. PERSISTENCIA TRAS REINICIAR
+###  a) Ejecuta 1.5 y anota cuántas herramientas hay.
+###  b) Terminal: docker compose down        (SIN -v)
+###  c) Terminal: docker compose up
+###  d) Ejecuta 1.5 otra vez: deben estar las mismas.
+### ============================================================
+
+GET {{baseUrl}}/herramientas/
+
+
+### ============================================================
+### 7. PENDIENTES (el grupo aún no programa estas rutas)
+### Descomentar cuando existan: GET /usuarios/{id}, PUT y DELETE de
+### un recurso (CRUD completo exigido), y las rutas de /categorias/.
+### ============================================================
+
+# GET {{baseUrl}}/usuarios/{{usuarioId}}
+# PUT {{baseUrl}}/herramientas/{{herramientaId}}
+# DELETE {{baseUrl}}/herramientas/{{herramientaId}}
