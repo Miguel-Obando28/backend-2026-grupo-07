@@ -1,4 +1,4 @@
-from app.presentation.routers import herramientas, prestamos, usuarios
+from app.presentation.routers import auth, herramientas, prestamos, usuarios
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -14,6 +14,7 @@ app = FastAPI(
 app.include_router(usuarios.router)
 app.include_router(herramientas.router)
 app.include_router(prestamos.router)
+app.include_router(auth.router)
 
 
 # 1. Manejador para errores HTTP explícitos (404, 400, 403, etc.)
